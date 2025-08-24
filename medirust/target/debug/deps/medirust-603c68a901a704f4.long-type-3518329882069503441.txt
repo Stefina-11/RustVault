@@ -1,0 +1,1 @@
+(std::option::Option<expression::grouped::Grouped<expression::operators::Eq<patients::columns::name, expression::bound::Bound<diesel::sql_types::Text, std::string::String>>>>, expression::grouped::Grouped<expression::operators::Eq<patients::columns::updated_at, NaiveDateTime>>)
