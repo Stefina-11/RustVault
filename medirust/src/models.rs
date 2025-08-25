@@ -1,16 +1,11 @@
-use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use chrono::{NaiveDateTime, Utc};
 use uuid::Uuid;
-
-use diesel::prelude::*;
-use serde::{Serialize, Deserialize};
-use chrono::{NaiveDateTime, Utc};
-use uuid::Uuid;
+use diesel::{Queryable, Insertable, AsChangeset, Identifiable, Selectable, Associations};
 
 use crate::schema::{patients, health_records};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, AsChangeset, Selectable, Identifiable)]
 #[diesel(table_name = patients)]
 pub struct Patient {
     pub id: Vec<u8>,
@@ -21,7 +16,7 @@ pub struct Patient {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
+#[derive(Debug, Clone, Serialize, Deserialize, AsChangeset, Selectable)]
 #[diesel(table_name = patients)]
 pub struct UpdatePatient {
     pub name: Option<String>,
@@ -29,8 +24,9 @@ pub struct UpdatePatient {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, AsChangeset, Selectable, Identifiable, Associations)]
 #[diesel(table_name = health_records)]
+#[diesel(belongs_to(Patient))]
 pub struct HealthRecord {
     pub id: Vec<u8>,
     pub patient_id: Vec<u8>,
@@ -43,7 +39,7 @@ pub struct HealthRecord {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
+#[derive(Debug, Clone, Serialize, Deserialize, AsChangeset, Selectable)]
 #[diesel(table_name = health_records)]
 pub struct UpdateHealthRecord {
     pub ipfs_cid: Option<String>,
@@ -54,95 +50,8 @@ pub struct UpdateHealthRecord {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, AsChangeset, Selectable)]
 #[diesel(table_name = patients)]
-pub struct UpdatePatient {
-    pub name: Option<String>,
-    pub public_key_pem: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, Insertable, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct HealthRecord {
-    pub id: Vec<u8>,
-    pub patient_id: Vec<u8>,
-    pub ipfs_cid: String,
-    pub record_type: String,
-    pub title: String,
-    pub encrypted_aes_key: String,
-    pub nonce: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct UpdateHealthRecord {
-    pub ipfs_cid: Option<String>,
-    pub record_type: Option<String>,
-    pub title: Option<String>,
-    pub encrypted_aes_key: Option<String>,
-    pub nonce: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct UpdateHealthRecord {
-    pub ipfs_cid: Option<String>,
-    pub record_type: Option<String>,
-    pub title: Option<String>,
-    pub encrypted_aes_key: Option<String>,
-    pub nonce: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
-#[diesel(table_name = patients)]
-pub struct UpdatePatient {
-    pub name: Option<String>,
-    pub public_key_pem: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, Insertable, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct HealthRecord {
-    pub id: Vec<u8>,
-    pub patient_id: Vec<u8>,
-    pub ipfs_cid: String,
-    pub record_type: String,
-    pub title: String,
-    pub encrypted_aes_key: String,
-    pub nonce: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct UpdateHealthRecord {
-    pub ipfs_cid: Option<String>,
-    pub record_type: Option<String>,
-    pub title: Option<String>,
-    pub encrypted_aes_key: Option<String>,
-    pub nonce: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, QueryableByName, AsChangeset)]
-#[diesel(table_name = health_records)]
-pub struct UpdateHealthRecord {
-    pub ipfs_cid: Option<String>,
-    pub record_type: Option<String>,
-    pub title: Option<String>,
-    pub encrypted_aes_key: Option<String>,
-    pub nonce: Option<String>,
-    pub updated_at: NaiveDateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewPatient {
     pub health_id: String,
     pub name: String,
@@ -151,7 +60,7 @@ pub struct NewPatient {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewHealthRecord {
-    pub patient_id: Uuid,
+    pub patient_id: Vec<u8>,
     pub record_type: String,
     pub title: String,
     pub content: String, // The actual health record content (will be encrypted)
@@ -181,94 +90,7 @@ impl NewHealthRecord {
         let now = Utc::now().naive_utc();
         HealthRecord {
             id: Uuid::new_v4().as_bytes().to_vec(),
-            patient_id: self.patient_id.as_bytes().to_vec(),
-            ipfs_cid,
-            record_type: self.record_type,
-            title: self.title,
-            encrypted_aes_key,
-            nonce,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl NewPatient {
-    pub fn to_patient(self, public_key_pem: String) -> Patient {
-        let now = Utc::now().naive_utc();
-        Patient {
-            id: Uuid::new_v4().as_bytes().to_vec(),
-            health_id: self.health_id,
-            name: self.name,
-            public_key_pem,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl NewHealthRecord {
-    pub fn to_health_record(
-        self,
-        ipfs_cid: String,
-        encrypted_aes_key: String,
-        nonce: String,
-    ) -> HealthRecord {
-        let now = Utc::now().naive_utc();
-        HealthRecord {
-            id: Uuid::new_v4().as_bytes().to_vec(),
-            patient_id: self.patient_id.as_bytes().to_vec(),
-            ipfs_cid,
-            record_type: self.record_type,
-            title: self.title,
-            encrypted_aes_key,
-            nonce,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewPatient {
-    pub health_id: String,
-    pub name: String,
-    // Public key will be generated by the backend
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewHealthRecord {
-    pub patient_id: Uuid,
-    pub record_type: String,
-    pub title: String,
-    pub content: String, // The actual health record content (will be encrypted)
-}
-
-impl NewPatient {
-    pub fn to_patient(self, public_key_pem: String) -> Patient {
-        let now = Utc::now().naive_utc();
-        Patient {
-            id: Uuid::new_v4().as_bytes().to_vec(),
-            health_id: self.health_id,
-            name: self.name,
-            public_key_pem,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl NewHealthRecord {
-    pub fn to_health_record(
-        self,
-        ipfs_cid: String,
-        encrypted_aes_key: String,
-        nonce: String,
-    ) -> HealthRecord {
-        let now = Utc::now().naive_utc();
-        HealthRecord {
-            id: Uuid::new_v4().as_bytes().to_vec(),
-            patient_id: self.patient_id.as_bytes().to_vec(),
+            patient_id: self.patient_id,
             ipfs_cid,
             record_type: self.record_type,
             title: self.title,

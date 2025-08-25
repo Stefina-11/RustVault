@@ -1,0 +1,2 @@
+diesel::expression::select_by::SelectBy<HealthRecord, _>: load_dsl::private::CompatibleType<_, _>
+SelectStatement<FromClause<health_records::table>, query_builder::select_clause::SelectClause<diesel::expression::select_by::SelectBy<HealthRecord, _>>, query_builder::distinct_clause::NoDistinctClause, query_builder::where_clause::WhereClause<diesel::expression::grouped::Grouped<diesel::expression::operators::Eq<health_records::columns::patient_id, diesel::expression::bound::Bound<diesel::sql_types::Binary, Vec<u8>>>>>>

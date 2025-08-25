@@ -1,17 +1,15 @@
 use actix_web::{web, HttpResponse, Responder};
 use diesel::prelude::*;
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection; // Use PgConnection
 use uuid::Uuid;
-use chrono::Utc;
+use anyhow::Result;
+use futures::{StreamExt, TryStreamExt}; // Import TryStreamExt
+use serde_json::json;
+use ipfs_api_backend_hyper::IpfsApi;
 
 use crate::models::{Patient, NewPatient, HealthRecord, NewHealthRecord};
 use crate::schema::{patients, health_records};
-use crate::{DbPool, IpfsClientType}; // Import IpfsClientType
-use crate::crypto::CryptoUtils; // Import CryptoUtils
-use rsa::RsaPublicKey; // Import RsaPublicKey
-use anyhow::Result; // Import anyhow::Result
-use futures::StreamExt; // For IPFS cat
+use crate::{DbPool, IpfsClientType};
+use crate::crypto::CryptoUtils;
 
 // Handler to create a new patient
 pub async fn create_patient(
@@ -23,7 +21,7 @@ pub async fn create_patient(
     let patient_data = new_patient_data.into_inner();
 
     // Generate RSA key pair for the patient
-    let (private_key, public_key) = match CryptoUtils::generate_rsa_key_pair() {
+    let (_private_key, public_key) = match CryptoUtils::generate_rsa_key_pair() {
         Ok(keys) => keys,
         Err(e) => return HttpResponse::InternalServerError().body(format!("Error generating RSA key pair: {:?}", e)),
     };
@@ -35,6 +33,7 @@ pub async fn create_patient(
     };
 
     let new_patient = patient_data.to_patient(public_key_pem);
+    let patient_to_return = new_patient.clone(); // Clone for the response
 
     match web::block(move || {
         diesel::insert_into(patients::table)
@@ -43,7 +42,7 @@ pub async fn create_patient(
     })
     .await
     {
-        Ok(Ok(_)) => HttpResponse::Created().json(new_patient),
+        Ok(Ok(_)) => HttpResponse::Created().json(patient_to_return),
         Ok(Err(e)) => HttpResponse::InternalServerError().body(format!("Error creating patient: {:?}", e)),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error blocking thread: {:?}", e)),
     }
@@ -54,14 +53,16 @@ pub async fn get_patient(
     pool: web::Data<DbPool>,
     patient_id: web::Path<String>,
 ) -> impl Responder {
-    let mut conn = pool.get().expect("couldn't get db connection from pool");
+    let _conn = pool.get().expect("couldn't get db connection from pool");
     let patient_uuid = Uuid::parse_str(&patient_id).expect("Invalid UUID format");
     let patient_id_bytes = patient_uuid.as_bytes().to_vec();
 
     match web::block(move || {
+        let mut conn_for_query = pool.get().expect("couldn't get db connection from pool");
         patients::table
-            .filter(patients::id.eq(patient_id_bytes))
-            .first::<Patient>(&mut conn)
+            .filter(patients::id.eq(patient_id_bytes.clone()))
+            .select(Patient::as_select())
+            .first(&mut conn_for_query)
     })
     .await
     {
@@ -82,11 +83,13 @@ pub async fn create_health_record(
     let record_data = new_health_record_data.into_inner();
 
     // 1. Retrieve patient's public key
-    let patient_id_bytes = record_data.patient_id.as_bytes().to_vec();
+    let patient_id_bytes = record_data.patient_id.clone();
     let patient = match web::block(move || {
+        let mut conn_for_query = pool.get().expect("couldn't get db connection from pool");
         patients::table
             .filter(patients::id.eq(patient_id_bytes))
-            .first::<Patient>(&mut conn)
+            .select(Patient::as_select())
+            .first(&mut conn_for_query)
     })
     .await
     {
@@ -126,6 +129,7 @@ pub async fn create_health_record(
         encrypted_aes_key,
         CryptoUtils::encode_base64(&nonce),
     );
+    let health_record_to_return = new_health_record.clone(); // Clone for the response
 
     match web::block(move || {
         diesel::insert_into(health_records::table)
@@ -134,7 +138,7 @@ pub async fn create_health_record(
     })
     .await
     {
-        Ok(Ok(_)) => HttpResponse::Created().json(new_health_record),
+        Ok(Ok(_)) => HttpResponse::Created().json(health_record_to_return),
         Ok(Err(e)) => HttpResponse::InternalServerError().body(format!("Error creating health record: {:?}", e)),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error blocking thread: {:?}", e)),
     }
@@ -146,15 +150,20 @@ pub async fn get_health_records_for_patient(
     ipfs_client: web::Data<IpfsClientType>,
     patient_id: web::Path<String>,
 ) -> impl Responder {
-    let mut conn = pool.get().expect("couldn't get db connection from pool");
+    let _conn = pool.get().expect("couldn't get db connection from pool");
     let patient_uuid = Uuid::parse_str(&patient_id).expect("Invalid UUID format");
     let patient_id_bytes = patient_uuid.as_bytes().to_vec();
+    let patient_id_bytes_clone_for_patient_query = patient_id_bytes.clone();
+    let patient_id_bytes_clone_for_records_query = patient_id_bytes.clone();
+    let pool_clone_for_patient_query = pool.clone(); // Clone pool for the first block
 
     // Retrieve patient to get their public key
-    let patient = match web::block(move || {
+    let _patient = match web::block(move || {
+        let mut conn_for_query = pool_clone_for_patient_query.get().expect("couldn't get db connection from pool");
         patients::table
-            .filter(patients::id.eq(patient_id_bytes.clone()))
-            .first::<Patient>(&mut conn)
+            .filter(patients::id.eq(patient_id_bytes_clone_for_patient_query))
+            .select(Patient::as_select())
+            .first(&mut conn_for_query)
     })
     .await
     {
@@ -172,9 +181,11 @@ pub async fn get_health_records_for_patient(
     };
 
     let records = match web::block(move || {
+        let mut conn_for_query = pool.get().expect("couldn't get db connection from pool");
         health_records::table
-            .filter(health_records::patient_id.eq(patient_id_bytes))
-            .load::<HealthRecord>(&mut conn)
+            .filter(health_records::patient_id.eq(patient_id_bytes_clone_for_records_query))
+            .select(HealthRecord::as_select())
+            .load(&mut conn_for_query)
     })
     .await
     {
@@ -239,14 +250,17 @@ pub async fn get_health_record_by_id(
     ipfs_client: web::Data<IpfsClientType>,
     record_id: web::Path<String>,
 ) -> impl Responder {
-    let mut conn = pool.get().expect("couldn't get db connection from pool");
+    let _conn = pool.get().expect("couldn't get db connection from pool");
     let record_uuid = Uuid::parse_str(&record_id).expect("Invalid UUID format");
     let record_id_bytes = record_uuid.as_bytes().to_vec();
+    let pool_clone_for_record_query = pool.clone(); // Clone pool for the first block
 
     let record = match web::block(move || {
+        let mut conn_for_query = pool_clone_for_record_query.get().expect("couldn't get db connection from pool");
         health_records::table
             .filter(health_records::id.eq(record_id_bytes.clone()))
-            .first::<HealthRecord>(&mut conn)
+            .select(HealthRecord::as_select())
+            .first(&mut conn_for_query)
     })
     .await
     {
@@ -258,10 +272,13 @@ pub async fn get_health_record_by_id(
 
     // Retrieve patient to get their public key (for private key assumption)
     let patient_id_bytes = record.patient_id.clone();
-    let patient = match web::block(move || {
+    let pool_clone_for_patient_query = pool.clone(); // Clone pool for this block
+    let _patient = match web::block(move || {
+        let mut conn_for_query = pool_clone_for_patient_query.get().expect("couldn't get db connection from pool");
         patients::table
             .filter(patients::id.eq(patient_id_bytes))
-            .first::<Patient>(&mut conn)
+            .select(Patient::as_select())
+            .first(&mut conn_for_query)
     })
     .await
     {
@@ -311,6 +328,7 @@ pub async fn get_health_record_by_id(
     HttpResponse::Ok().json(json!({
         "id": Uuid::from_slice(&record.id).unwrap().to_string(),
         "patient_id": Uuid::from_slice(&record.patient_id).unwrap().to_string(),
+
         "ipfs_cid": record.ipfs_cid,
         "record_type": record.record_type,
         "title": record.title,

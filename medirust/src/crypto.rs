@@ -1,15 +1,15 @@
 use aes_gcm::{
     aead::{Aead, KeyInit, OsRng},
-    Aes256Gcm, Nonce, Key,
+    Aes256Gcm, Nonce,
 };
 use rsa::{
     RsaPrivateKey, RsaPublicKey, Pkcs1v15Encrypt,
+    pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPublicKey},
+    pkcs8::{LineEnding}, // Only import LineEnding if needed
 };
-use pkcs8::{DecodePublicKey, EncodePublicKey, DecodePrivateKey, EncodePrivateKey, LineEnding}; // Import necessary traits and LineEnding
 use base64::{engine::general_purpose, Engine as _};
 use rand::RngCore;
 use anyhow::{Result, anyhow};
-use serde_json::json; // Added for json! macro in handlers
 
 // AES Key size for AES256-GCM
 const AES_KEY_SIZE: usize = 32; // 256 bits
@@ -100,27 +100,27 @@ impl CryptoUtils {
 
     // Export RSA Public Key to PKCS8 PEM format
     pub fn export_public_key_to_pem(public_key: &RsaPublicKey) -> Result<String> {
-        public_key.to_pkcs8_pem(LineEnding::LF)
+        public_key.to_pkcs1_pem(LineEnding::LF)
             .map_err(|e| anyhow!("Failed to export public key to PEM: {}", e))
             .map(|pem| pem.to_string())
     }
 
-    // Import RSA Public Key from PKCS8 PEM format
+    // Import RSA Public Key from PKCS1 PEM format
     pub fn import_public_key_from_pem(pem: &str) -> Result<RsaPublicKey> {
-        RsaPublicKey::from_pkcs8_pem(pem)
+        RsaPublicKey::from_pkcs1_pem(pem)
             .map_err(|e| anyhow!("Failed to import public key from PEM: {}", e))
     }
 
     // Export RSA Private Key to PKCS8 PEM format
     pub fn export_private_key_to_pem(private_key: &RsaPrivateKey) -> Result<String> {
-        private_key.to_pkcs8_pem(LineEnding::LF)
+        private_key.to_pkcs1_pem(LineEnding::LF)
             .map_err(|e| anyhow!("Failed to export private key to PEM: {}", e))
             .map(|pem| pem.to_string())
     }
 
-    // Import RSA Private Key from PKCS8 PEM format
+    // Import RSA Private Key from PKCS1 PEM format
     pub fn import_private_key_from_pem(pem: &str) -> Result<RsaPrivateKey> {
-        RsaPrivateKey::from_pkcs8_pem(pem)
+        RsaPrivateKey::from_pkcs1_pem(pem)
             .map_err(|e| anyhow!("Failed to import private key from PEM: {}", e))
     }
 }

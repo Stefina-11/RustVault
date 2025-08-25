@@ -1,0 +1,12 @@
+/home/stefina/clg work/RustVault/medirust/target/debug/deps/core2-4711b7133c40070b.d: /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/lib.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/error.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/mod.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/cursor.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/error.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/impls.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/traits.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/util.rs
+
+/home/stefina/clg work/RustVault/medirust/target/debug/deps/libcore2-4711b7133c40070b.rmeta: /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/lib.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/error.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/mod.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/cursor.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/error.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/impls.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/traits.rs /home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/util.rs
+
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/lib.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/error.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/mod.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/cursor.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/error.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/impls.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/traits.rs:
+/home/stefina/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/core2-0.4.0/src/io/util.rs:
